@@ -2,7 +2,7 @@
   "format": "zesia.host-adapter.v1",
   "id": "opencode",
   "requester": "OpenCode",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "runtimeVersion": "0.4.7",
   "skillDirectory": ".opencode/skills",
   "entry": "skill-and-standalone-a2a",

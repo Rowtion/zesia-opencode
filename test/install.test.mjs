@@ -2,3 +2,11 @@ import test from'node:test';import assert from'node:assert/strict';import{mkdtem
 const host=JSON.parse(await readFile(new URL('../host.json',import.meta.url),'utf8'));test('installs only this host skill and preserves existing unmanaged content',async()=>{const project=await mkdtemp(join(tmpdir(),'zesia-host-install-'));try{const result=await install({project,source:fileURLToPath(new URL('../dist/skill',import.meta.url)),host,cliSeedDirectory:fileURLToPath(new URL('../bin',import.meta.url))});assert.equal(result.reused,false);assert.match(await readFile(join(result.destination,'SKILL.md'),'utf8'),/ZESIA/);assert.equal((await install({project,source:fileURLToPath(new URL('../dist/skill',import.meta.url)),host,cliSeedDirectory:fileURLToPath(new URL('../bin',import.meta.url))})).reused,true);}finally{await rm(project,{recursive:true,force:true});}});
 
 test('refuses unmanaged existing skill and path escape without altering it',async()=>{const project=await mkdtemp(join(tmpdir(),'zesia-unmanaged-'));try{const dest=join(project,host.skillDirectory,'zesia-consult');await mkdir(dest,{recursive:true});await writeFile(join(dest,'SKILL.md'),'user-owned');await assert.rejects(install({project,source:fileURLToPath(new URL('../dist/skill',import.meta.url)),host}),/unmanaged/);assert.equal(await readFile(join(dest,'SKILL.md'),'utf8'),'user-owned');await assert.rejects(install({project,source:project,host:{...host,skillDirectory:'../escape'}}),/Invalid skill directory/);}finally{await rm(project,{recursive:true,force:true});}});
+
+test('packages a native OpenCode command that uses the local approval workflow', async () => {
+  const command = await readFile(new URL('../dist/skill/commands/zesia-consult.md', import.meta.url), 'utf8');
+  assert.match(command, /^---\ndescription: Ask ZESIA to review the current task\n---/u);
+  assert.match(command, /`zesia-consult` Skill/u);
+  assert.match(command, /\$ARGUMENTS/u);
+  assert.match(command, /user to approve the exact materials and destination/u);
+});

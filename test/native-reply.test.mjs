@@ -77,3 +77,14 @@ test('a previously queued receipt is not posted again after removal from the inb
   const runtime = { result: async () => ({ ok: true, status: 'completed', advice: 'Review' }) };
   assert.equal(await updateHandback({ binding, runtime, host }), 'queued');
 });
+
+test('only an expired unapproved draft becomes eligible for an explicit new request', async () => {
+  const binding = { ...original, expiresAt: Date.now() - 1000 };
+  const host = { post() { assert.fail('An expired or unknown draft must not be posted'); } };
+  const runtime = { result: async () => ({ status: 'prepared' }) };
+  assert.equal(await updateHandback({ binding, host, runtime }), 'expired');
+  assert.equal(await updateHandback({ binding: { ...binding, expiresAt: Date.now() + 60000 }, host, runtime }), 'waiting');
+  assert.equal(await updateHandback({
+    binding, host, runtime: { result: async () => ({ status: 'unknown' }) },
+  }), 'waiting');
+});

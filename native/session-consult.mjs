@@ -9,6 +9,10 @@ const execute = promisify(execFile);
 const runtimeVersion = '0.4.14';
 const terminal = new Set(['cancelled', 'expired', 'failed']);
 
+export function expiredBeforeApproval(status, expiresAt, now = Date.now()) {
+  return status === 'prepared' && Number.isFinite(expiresAt) && expiresAt <= now;
+}
+
 export function replyText(message) {
   if (message?.type !== 'assistant' || !message.time?.completed || message.error) return '';
   return message.content.filter(part => part.type === 'text').map(part => part.text).join('\n\n').trim();
@@ -85,6 +89,7 @@ export async function updateHandback({ binding, runtime, host }) {
   const match = item => item?.id === id && item.type === 'synthetic' &&
     (item.metadata ?? item.payload?.metadata)?.zesiaRequestId === binding.requestId;
   const opinion = await runtime.result(binding.draftId);
+  if (expiredBeforeApproval(opinion.status, binding.expiresAt)) return 'expired';
   if (terminal.has(opinion.status)) return opinion.status;
   if (opinion.status !== 'completed' || !opinion.ok || typeof opinion.advice !== 'string') return 'waiting';
   if (opinion.requestId && opinion.requestId !== binding.requestId) throw Error('The saved result belongs to another request.');

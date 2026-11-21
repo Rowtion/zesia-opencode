@@ -71,6 +71,8 @@ replaces an existing version. Preserve [LICENSE](LICENSE) and upstream notices.
 
 ## Optional native OpenCode V2 reply review
 
+[Install the OpenCode V2 adapter](native/INSTALL.md).
+
 The V2 TUI adapter lives under [native/](native/). It requires the public
 Agent Plugin Skill and its shared standalone Runtime 0.4.14. Install that
 Skill into a supported OpenCode Skill directory and run the Setup procedure

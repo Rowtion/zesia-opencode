@@ -1,6 +1,6 @@
 import { Plugin } from '@opencode/plugin/tui';
 import { basename, isAbsolute } from 'node:path';
-import { makeRuntime, opinionText, replyText, selectedReplyPacket, updateHandback } from './session-consult.mjs';
+import { expiredBeforeApproval, makeRuntime, opinionText, replyText, selectedReplyPacket, updateHandback } from './session-consult.mjs';
 
 const pollingWindow = 20 * 60 * 1000;
 const terminal = new Set(['received', 'cancelled', 'expired', 'failed']);
@@ -81,6 +81,7 @@ export default Plugin.define({
         const directory = session.get(sessionId)?.location?.directory;
         if (typeof directory !== 'string' || !isAbsolute(directory)) throw Error('Open a local workspace session to use ZESIA.');
         await session.message.sync(sessionId);
+        if (closed || active() !== sessionId) return;
         let replyId = input?.trim();
         if (!replyId) {
           const options = session.message.list(sessionId).filter(replyText).reverse().map(message => ({
@@ -97,16 +98,22 @@ export default Plugin.define({
           binding.sessionId === sessionId && binding.replyId === replyId && !terminal.has(binding.status));
         if (previous) {
           const status = await runtime.result(previous.draftId);
-          if (status.status === 'prepared') await openReview(previous);
-          else {
-            await check(previous);
-            notify('This reply already has a consultation. Use /zesia-result to check it.', sessionId);
+          if (expiredBeforeApproval(status.status, previous.expiresAt)) {
+            await update(state => { state.bindings[previous.draftId].status = 'expired'; });
+          } else {
+            if (status.status === 'prepared') await openReview(previous);
+            else {
+              await check(previous);
+              notify('This reply already has a consultation. Use /zesia-result to check it.', sessionId);
+            }
+            return;
           }
-          return;
         }
         const draft = await runtime.prepare(packet);
+        const expiresAt = Date.parse(draft.expiresAt);
+        if (!Number.isFinite(expiresAt)) throw Error('The Runtime did not return a draft expiry.');
         const binding = {
-          sessionId, replyId, draftId: draft.draftId, requestId: draft.requestId,
+          sessionId, replyId, draftId: draft.draftId, requestId: draft.requestId, expiresAt,
           until: Date.now() + pollingWindow, status: 'waiting',
         };
         await update(state => { state.bindings[binding.draftId] = binding; });
@@ -136,7 +143,9 @@ export default Plugin.define({
         await check(binding);
         const opinion = await runtime.result(binding.draftId);
         if (closed || active() !== sessionId) return;
-        if (opinion.status === 'completed' && opinion.ok) {
+        if (expiredBeforeApproval(opinion.status, binding.expiresAt)) {
+          notify('The unapproved draft expired. Run /zesia to prepare an updated draft.', sessionId);
+        } else if (opinion.status === 'completed' && opinion.ok) {
           await context.ui.dialog.alert({ title: 'ZESIA Consult', message: opinionText(opinion, binding.replyId) });
         } else {
           notify(opinion.message || 'Consultation status: ' + opinion.status, sessionId);

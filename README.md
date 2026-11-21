@@ -68,3 +68,26 @@ acceptance have separate evidence. Publishing is an explicit workflow on main an
 replaces an existing version. Preserve [LICENSE](LICENSE) and upstream notices.
 
 [OpenCode Skill documentation](https://developers.openai.com/codex/skills)
+
+## Optional native OpenCode V2 reply review
+
+[Install the OpenCode V2 adapter](native/INSTALL.md).
+
+The V2 TUI adapter lives under [native/](native/). It requires the public
+Agent Plugin Skill and its shared standalone Runtime 0.4.14. Install that
+Skill into a supported OpenCode Skill directory and run the Setup procedure
+shipped with it. This adapter has no bundled Skill or Runtime.
+
+For a local checkout of the adapter, add the absolute path to the native/
+directory to the plugins array of OpenCode V2's cli.json, then launch the
+local TUI. A registry package, when available, uses the same TUI entry.
+The existing OpenCode Skill is available independently for V1.
+
+- Run /zesia to select a completed assistant reply, or pass its message ID.
+  Only the visible text of that reply is copied into the new local draft.
+- Approve or cancel in the shared browser window. Results stay tied to the
+  original conversation after changing tabs or restarting the TUI.
+- Use /zesia-result in that conversation to read the opinion right away.
+  The V2 inbox makes it available to that conversation's agent on its next
+  turn. ZESIA records the Agent receipt when the message enters the
+  conversation, not when it is queued.

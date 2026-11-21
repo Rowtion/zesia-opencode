@@ -1,0 +1,14 @@
+{
+  "name": "@zesia/opencode-consult",
+  "version": "0.1.0",
+  "description": "Review a selected OpenCode reply with the shared ZESIA Consult Runtime.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    "./tui": "./tui.mjs"
+  },
+  "files": ["tui.mjs", "session-consult.mjs"],
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.3.2 <3"
+  }
+}

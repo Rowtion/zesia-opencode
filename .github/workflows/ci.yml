@@ -15,6 +15,7 @@ jobs:
       - run: npm test
       - run: npm run test:native
       - run: npm run package
+      - run: npm pack ./native --ignore-scripts --pack-destination dist
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: package-${{ github.sha }}

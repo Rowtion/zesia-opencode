@@ -52,8 +52,10 @@ test('queue once in the original session, even across restart, then record recei
   assert.equal(calls.length, 1);
   assert.equal(inbox.has('ses_changed_to'), false);
   const queued = inbox.get('ses_initial').get(id);
-  inbox.clear();
   transcript.set('ses_initial', new Map([[id, { ...queued, metadata: queued.payload.metadata }]]));
+  assert.equal(await updateHandback({ binding: original, host, runtime }), 'queued');
+  assert.equal(recorded, false);
+  inbox.clear();
   assert.equal(await updateHandback({ binding: original, host, runtime }), 'received');
   assert.equal(recorded, true);
 });

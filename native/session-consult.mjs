@@ -89,6 +89,12 @@ export async function updateHandback({ binding, runtime, host }) {
   if (opinion.status !== 'completed' || !opinion.ok || typeof opinion.advice !== 'string') return 'waiting';
   if (opinion.requestId && opinion.requestId !== binding.requestId) throw Error('The saved result belongs to another request.');
 
+  const queued = await host.pending(binding.sessionId, id);
+  if (queued) {
+    if (!match(queued)) throw Error('The receipt ID is already used by different queued content.');
+    return 'queued';
+  }
+
   const projected = await host.message(binding.sessionId, id);
   if (projected) {
     if (!match(projected)) throw Error('The receipt ID is already used by different session content.');
@@ -96,12 +102,6 @@ export async function updateHandback({ binding, runtime, host }) {
     if (!receipt.ok) throw Error(receipt.message || 'The Runtime receipt is still pending.');
     return 'received';
   }
-  const queued = await host.pending(binding.sessionId, id);
-  if (queued) {
-    if (!match(queued)) throw Error('The receipt ID is already used by different queued content.');
-    return 'queued';
-  }
-
   if (binding.status === 'queued') return 'queued';
   const admitted = await host.post({
     sessionID: binding.sessionId,
